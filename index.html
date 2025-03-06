@@ -82,6 +82,23 @@
         button:hover {
             background-color: #555;
         }
+
+        a {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            width: calc(50% - 10px); /* Two buttons per row on wider screens */
+            box-sizing: border-box; /* Important for consistent sizing */
+        }
+
+        a:hover {
+            background-color: #555;
+        }
         #message {
             font-size: 2em;
             margin-top: 20px;
@@ -115,7 +132,7 @@
             <button id="down-button">Вниз</button>
             <button id="left-button">Влево</button>
             <button id="right-button">Вправо</button>
-            <a href="https://kirill-Fe/snake">restart</a>
+            <a href="https://kirill-Fe.github.io/snake">restart</a>
         </div>
          <div id="message"></div>
     </div>
