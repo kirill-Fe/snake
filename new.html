@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Змейка — классическая игра</title>
+    <link rel="shortcut icon" href="icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #8a63f2;
+            --secondary: #63f2c8;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #e0e0e0;
+            --lighter: #ffffff;
+            --accent: #ff7e5f;
+            --card-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-glow: rgba(138, 99, 242, 0.25);
+            --snake-color: #4caf50;
+            --food-color: #ff5252;
+        }
+        [data-theme="light"] {
+            --dark: #f9f9f9;
+            --darker: #e0e0e0;
+            --light: #333333;
+            --lighter: #121212;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-secondary: #666666;
+            --border-glow: rgba(138, 99, 242, 0.3);
+            --snake-color: #2e7d32;
+            --food-color: #d32f2f;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.2s ease, color 0.1s ease;
+        }
+        body {
+            background-color: var(--dark);
+            color: var(--text);
+            line-height: 1.5;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--darker);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+            border: 2px solid var(--darker);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7a4fdf;
+        }
+        ::selection {
+            background: var(--primary);
+            color: var(--lighter);
+            text-shadow: none;
+        }
+        html {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%238a63f2" d="M3 3l18 18-6-6V11L7 6v11z"/></svg>'), auto;
+        }
+        a, button, .projects-button, #up-button, #down-button, #left-button, #right-button, #reset-button {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ff7e5f" d="M3 3l18 18-6-6V11L7 6v11z"/></svg>'), pointer;
+        }
+        .theme-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 5px;
+            display: flex;
+            gap: 5px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .theme-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .theme-icon.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 1.8rem;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-glow);
+            max-width: 700px;
+            width: 100%;
+            margin: 1rem auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.3rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+        .sub {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        #game-board {
+            display: inline-grid;
+            grid-template-columns: repeat(20, minmax(18px, 28px));
+            grid-template-rows: repeat(20, minmax(18px, 28px));
+            background-color: var(--darker);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border: 2px solid var(--primary);
+            width: auto;
+            margin: 0 auto;
+        }
+        .cell {
+            background-color: var(--dark);
+            transition: 0.05s linear;
+        }
+        .snake {
+            background-color: var(--snake-color);
+            border-radius: 4px;
+            box-shadow: inset 0 0 2px rgba(0,0,0,0.3);
+        }
+        .food {
+            background-color: var(--food-color);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(255,82,82,0.6);
+        }
+        .stats {
+            background: rgba(138,99,242,0.1);
+            border-radius: 24px;
+            padding: 0.8rem 1rem;
+            margin: 1rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.2rem;
+            border: 1px solid var(--border-glow);
+        }
+        .stat-item {
+            background: var(--card-bg);
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+        }
+        .stat-label {
+            color: var(--primary);
+            margin-right: 6px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 0.8rem;
+        }
+        button, .projects-button {
+            background: linear-gradient(135deg, var(--primary), #a07aff);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 6px 12px rgba(138,99,242,0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        button:hover, .projects-button:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.05);
+            box-shadow: 0 10px 18px rgba(138,99,242,0.4);
+        }
+        #reset-button {
+            background: linear-gradient(135deg, #ff7e5f, #f44336);
+            box-shadow: 0 4px 10px rgba(244,67,54,0.3);
+        }
+        #message {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+            color: var(--secondary);
+            background: rgba(0,0,0,0.3);
+            display: inline-block;
+            padding: 5px 16px;
+            border-radius: 50px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 580px) {
+            .game-card { padding: 1.2rem; }
+            h1 { font-size: 1.7rem; }
+            #game-board { grid-template-columns: repeat(20, minmax(15px, 20px)); grid-template-rows: repeat(20, minmax(15px, 20px)); }
+            .stat-item { font-size: 0.75rem; padding: 0.3rem 0.8rem; }
+            button, .projects-button { padding: 7px 14px; font-size: 0.75rem; }
+            .button-group { gap: 8px; }
+        }
+        @media (max-width: 420px) {
+            #game-board { grid-template-columns: repeat(20, minmax(12px, 16px)); grid-template-rows: repeat(20, minmax(12px, 16px)); }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="theme-switcher" id="themeSwitcher">
+        <div class="theme-icon active" data-theme="dark">🌙</div>
+        <div class="theme-icon" data-theme="light">☀️</div>
+    </div>
+
+    <div class="game-card">
+        <h1><i class="fas fa-snake"></i> Змейка</h1>
+        <div class="sub">Управляй стрелками или WASD</div>
+
+        <div id="game-container">
+            <div id="game-board"></div>
+            <div class="stats">
+                <div class="stat-item"><span class="stat-label">🍎 Счёт:</span> <span id="score">0</span></div>
+                <div class="stat-item"><span class="stat-label">🏆 Рекорд:</span> <span id="best-score">0</span></div>
+            </div>
+            <div class="button-group">
+                <button id="up-button"><i class="fas fa-arrow-up"></i> Вверх</button>
+                <button id="down-button"><i class="fas fa-arrow-down"></i> Вниз</button>
+                <button id="left-button"><i class="fas fa-arrow-left"></i> Влево</button>
+                <button id="right-button"><i class="fas fa-arrow-right"></i> Вправо</button>
+                <button id="reset-button"><i class="fas fa-redo-alt"></i> Повторить</button>
+                <a href="https://kirill-fe.github.io/projects/" class="projects-button"><i class="fas fa-folder-open"></i> К проектам</a>
+            </div>
+            <div id="message"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025-<span id="currentYear"></span> Разработано <a href="https://kirill-fe.github.io/projects/" target="_blank">florik-projects</a></p>
+    </footer>
+
+    <script>
+        (function(){
+            const boardWidth = 20;
+            const boardHeight = 20;
+            const gameBoard = document.getElementById('game-board');
+            const scoreDisplay = document.getElementById('score');
+            const bestScoreDisplay = document.getElementById('best-score');
+            const upButton = document.getElementById('up-button');
+            const downButton = document.getElementById('down-button');
+            const leftButton = document.getElementById('left-button');
+            const rightButton = document.getElementById('right-button');
+            const resetButton = document.getElementById('reset-button');
+            const messageDisplay = document.getElementById('message');
+
+            let board = [];
+            let snake = [{ x: 10, y: 10 }];
+            let food = { x: 15, y: 10 };
+            let direction = 'right';
+            let score = 0;
+            let bestScore = localStorage.getItem('snakeBestScore') || 0;
+            let gameInterval;
+            let gameActive = false;
+
+            function createBoard() {
+                gameBoard.innerHTML = '';
+                board = [];
+                for (let i = 0; i < boardHeight; i++) {
+                    for (let j = 0; j < boardWidth; j++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        gameBoard.appendChild(cell);
+                        board.push(cell);
+                    }
+                }
+            }
+
+            function updateBoard() {
+                board.forEach(cell => {
+                    cell.classList.remove('snake', 'food');
+                });
+                snake.forEach(segment => {
+                    const index = segment.y * boardWidth + segment.x;
+                    if (board[index]) board[index].classList.add('snake');
+                });
+                const foodIndex = food.y * boardWidth + food.x;
+                if (board[foodIndex]) board[foodIndex].classList.add('food');
+            }
+
+            function generateFood() {
+                let freeCells = [];
+                for (let y = 0; y < boardHeight; y++) {
+                    for (let x = 0; x < boardWidth; x++) {
+                        if (!snake.some(seg => seg.x === x && seg.y === y)) {
+                            freeCells.push({ x, y });
+                        }
+                    }
+                }
+                if (freeCells.length === 0) return null;
+                const rand = Math.floor(Math.random() * freeCells.length);
+                return freeCells[rand];
+            }
+
+            function moveSnake() {
+                if (!gameActive) return;
+                const head = { ...snake[0] };
+                switch (direction) {
+                    case 'up': head.y--; break;
+                    case 'down': head.y++; break;
+                    case 'left': head.x--; break;
+                    case 'right': head.x++; break;
+                }
+                if (head.x < 0 || head.x >= boardWidth || head.y < 0 || head.y >= boardHeight || checkSelfCollision(head)) {
+                    gameOver();
+                    return;
+                }
+                const willEat = (head.x === food.x && head.y === food.y);
+                if (willEat) {
+                    score += 10;
+                    updateScore();
+                    const newFood = generateFood();
+                    if (!newFood) {
+                        gameWin();
+                        return;
+                    }
+                    food = newFood;
+                    snake.unshift(head);
+                    updateBoard();
+                } else {
+                    snake.unshift(head);
+                    snake.pop();
+                    updateBoard();
+                }
+            }
+
+            function checkSelfCollision(head) {
+                return snake.some((segment, idx) => idx !== 0 && segment.x === head.x && segment.y === head.y);
+            }
+
+            function updateScore() {
+                scoreDisplay.textContent = score;
+                if (score > bestScore) {
+                    bestScore = score;
+                    localStorage.setItem('snakeBestScore', bestScore);
+                    bestScoreDisplay.textContent = bestScore;
+                }
+            }
+
+            function updateBestScoreDisplay() {
+                bestScoreDisplay.textContent = bestScore;
+            }
+
+            function gameOver() {
+                gameActive = false;
+                clearInterval(gameInterval);
+                messageDisplay.textContent = `💀 Game Over! Счёт: ${score}`;
+            }
+
+            function gameWin() {
+                gameActive = false;
+                clearInterval(gameInterval);
+                messageDisplay.textContent = `🏆 Победа! Вы заполнили всё поле! Счёт: ${score}`;
+            }
+
+            function resetGame() {
+                clearInterval(gameInterval);
+                snake = [{ x: 10, y: 10 }];
+                direction = 'right';
+                score = 0;
+                scoreDisplay.textContent = score;
+                messageDisplay.textContent = '';
+                const newFood = generateFood();
+                if (newFood) food = newFood;
+                else food = { x: 5, y: 5 };
+                updateBoard();
+                gameActive = true;
+                startGame();
+            }
+
+            function startGame() {
+                if (gameInterval) clearInterval(gameInterval);
+                gameActive = true;
+                gameInterval = setInterval(moveSnake, 180);
+            }
+
+            function changeDirection(newDir) {
+                if (!gameActive) return;
+                if (newDir === 'up' && direction === 'down') return;
+                if (newDir === 'down' && direction === 'up') return;
+                if (newDir === 'left' && direction === 'right') return;
+                if (newDir === 'right' && direction === 'left') return;
+                direction = newDir;
+            }
+
+            createBoard();
+            food = generateFood() || { x: 5, y: 5 };
+            updateBoard();
+            updateBestScoreDisplay();
+            startGame();
+
+            upButton.addEventListener('click', () => changeDirection('up'));
+            downButton.addEventListener('click', () => changeDirection('down'));
+            leftButton.addEventListener('click', () => changeDirection('left'));
+            rightButton.addEventListener('click', () => changeDirection('right'));
+            resetButton.addEventListener('click', resetGame);
+
+            document.addEventListener('keydown', (e) => {
+                const key = e.key;
+                // Стрелки
+                if (key === 'ArrowUp') changeDirection('up');
+                else if (key === 'ArrowDown') changeDirection('down');
+                else if (key === 'ArrowLeft') changeDirection('left');
+                else if (key === 'ArrowRight') changeDirection('right');
+                // Буквы WASD (без учёта регистра)
+                else if (key === 'w' || key === 'W') changeDirection('up');
+                else if (key === 's' || key === 'S') changeDirection('down');
+                else if (key === 'a' || key === 'A') changeDirection('left');
+                else if (key === 'd' || key === 'D') changeDirection('right');
+                else return;
+                e.preventDefault();
+            });
+        })();
+
+        // Theme switcher (как в florik projects)
+        const themeSwitcher = document.getElementById('themeSwitcher');
+        const themeIcons = document.querySelectorAll('.theme-icon');
+        const body = document.body;
+        themeIcons.forEach(icon => {
+            icon.addEventListener('click', () => {
+                const theme = icon.getAttribute('data-theme');
+                body.setAttribute('data-theme', theme);
+                themeIcons.forEach(i => i.classList.remove('active'));
+                icon.classList.add('active');
+                localStorage.setItem('theme', theme);
+            });
+        });
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        body.setAttribute('data-theme', savedTheme);
+        document.querySelector(`.theme-icon[data-theme="${savedTheme}"]`).classList.add('active');
+
+        document.getElementById('currentYear').innerText = new Date().getFullYear();
+    </script>
+</body>
+</html>
